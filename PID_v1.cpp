@@ -20,9 +20,9 @@
 PID::PID(double* Input, double* Output, double* Setpoint,
         double Kp, double Ki, double Kd, int POn, int ControllerDirection)
 {
-    myOutput = Output;
-    myInput = Input;
-    mySetpoint = Setpoint;
+    myOutput = Output;//系统输出值，比如pwm
+    myInput = Input; //系统输入值，比如电机或轮胎的转速
+    mySetpoint = Setpoint; //这个是预计目标，例如期待电机和轮胎的转速，注意单位要一致
     inAuto = false;
 
     PID::SetOutputLimits(0, 255);				//default output limit corresponds to
