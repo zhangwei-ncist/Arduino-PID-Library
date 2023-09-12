@@ -26,14 +26,14 @@ PID::PID(double* Input, double* Output, double* Setpoint,
     inAuto = false;
 
     PID::SetOutputLimits(0, 255);				//default output limit corresponds to
-												//the arduino pwm limits
+	//系统的输出范围，arduino默认就是0-255											//the arduino pwm limits
 
-    SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
+    SampleTime = 100;//采样时间							//default Controller Sample Time is 0.1 seconds
 
-    PID::SetControllerDirection(ControllerDirection);
-    PID::SetTunings(Kp, Ki, Kd, POn);
+    PID::SetControllerDirection(ControllerDirection);//设置控制方向，例如pwm增加，电机转速增加，这就是DIRECT
+    PID::SetTunings(Kp, Ki, Kd, POn);//优化用户提供的系数
 
-    lastTime = millis()-SampleTime;
+    lastTime = millis()-SampleTime;//最近一次采样周期的开始位置？
 }
 
 /*Constructor (...)*********************************************************
@@ -54,6 +54,7 @@ PID::PID(double* Input, double* Output, double* Setpoint,
  *   every time "void loop()" executes.  the function will decide for itself whether a new
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
+ *   注意这个方法，在loop中每次调用。该方法会决定是否一个新的输出需要被计算
  **********************************************************************************/
 bool PID::Compute()
 {
@@ -74,7 +75,7 @@ bool PID::Compute()
       if(outputSum > outMax) outputSum= outMax;
       else if(outputSum < outMin) outputSum= outMin;
 
-      /*Add Proportional on Error, if P_ON_E is specified*/
+      /*Add Proportional on Error, if P_ON_E is specified 给误差加比例系数，如果P_ON_E有效*/
 	   double output;
       if(pOnE) output = kp * error;
       else output = 0;
@@ -98,20 +99,21 @@ bool PID::Compute()
  * This function allows the controller's dynamic performance to be adjusted.
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
+ * 动态调整控制器的动态性能
  ******************************************************************************/
 void PID::SetTunings(double Kp, double Ki, double Kd, int POn)
 {
-   if (Kp<0 || Ki<0 || Kd<0) return;
+   if (Kp<0 || Ki<0 || Kd<0) return;//小于零不行
 
    pOn = POn;
    pOnE = POn == P_ON_E;
 
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
 
-   double SampleTimeInSec = ((double)SampleTime)/1000;
+   double SampleTimeInSec = ((double)SampleTime)/1000;//用秒来表示的采样周期
    kp = Kp;
-   ki = Ki * SampleTimeInSec;
-   kd = Kd / SampleTimeInSec;
+   ki = Ki * SampleTimeInSec;//为积分做准备
+   kd = Kd / SampleTimeInSec;//为微分做准备
 
   if(controllerDirection ==REVERSE)
    {
@@ -171,6 +173,8 @@ void PID::SetOutputLimits(double Min, double Max)
  * Allows the controller Mode to be set to manual (0) or Automatic (non-zero)
  * when the transition from manual to auto occurs, the controller is
  * automatically initialized
+ * 设置模式，用来设置控制器的模式，为手动=0，还是自动=非0
+ * 当从手动切换到自动时，会初始化PID
  ******************************************************************************/
 void PID::SetMode(int Mode)
 {
@@ -185,6 +189,7 @@ void PID::SetMode(int Mode)
 /* Initialize()****************************************************************
  *	does all the things that need to happen to ensure a bumpless transfer
  *  from manual to automatic mode.
+ *该方法为了无缝从手动切换到自动模式
  ******************************************************************************/
 void PID::Initialize()
 {
@@ -199,6 +204,8 @@ void PID::Initialize()
  * to +Input) or a REVERSE acting process(+Output leads to -Input.)  we need to
  * know which one, because otherwise we may increase the output when we should
  * be decreasing.  This is called from the constructor.
+ * DIRECT模式意味着  Output增加导致Input增加
+ * REVERSE 反正，Output增加导致Input减少
  ******************************************************************************/
 void PID::SetControllerDirection(int Direction)
 {
